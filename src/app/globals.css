@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-neo-bg: #FFFDF5;
+  --color-neo-primary: #818CF8;
+  --color-neo-secondary: #FDA4AF;
+  --color-neo-accent: #6EE7B7;
+  --color-neo-yellow: #FCD34D;
+  --color-neo-text: #1F1F1F;
+
+  --shadow-neo: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-neo-sm: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-neo-lg: 6px 6px 0px 0px rgba(0, 0, 0, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    font-family: var(--font-geist-sans), var(--font-noto-emoji), sans-serif;
+    @apply bg-neo-bg text-neo-text overflow-x-hidden;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .neo-box {
+    @apply border-3 border-black shadow-neo bg-white rounded-2xl transition-all duration-200;
+  }
+
+  .neo-button {
+    @apply border-3 border-black shadow-neo bg-white rounded-full px-6 py-2 font-bold hover:-translate-y-1 hover:translate-x-0.5 hover:shadow-neo-lg active:translate-y-0 active:translate-x-0 active:shadow-neo transition-all duration-200;
+  }
+
+  .neo-input {
+    @apply border-3 border-black shadow-neo bg-white rounded-xl w-full p-4 focus:outline-none focus:ring-0 transition-all duration-200;
+  }
 }
