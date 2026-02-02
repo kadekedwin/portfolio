@@ -1,4 +1,4 @@
-import { Rocket, ScrollText } from 'lucide-react';
+import { Rocket, ScrollText, Code2 } from 'lucide-react';
 
 export default function About() {
     return (
@@ -58,6 +58,27 @@ export default function About() {
                                             <div className="font-black text-xl mb-2">{job.role}</div>
                                             <p className="font-medium text-gray-600">{job.desc}</p>
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Tech Stack */}
+                        <div>
+                            <h3 className="text-2xl font-black mb-6 flex items-center gap-2">
+                                <span className="w-8 h-8 bg-neo-accent rounded-full border-2 border-black flex items-center justify-center"><Code2 className="w-5 h-5 text-black" /></span>
+                                Tech Arsenal
+                            </h3>
+                            <div className="flex flex-wrap gap-4">
+                                {[
+                                    { name: "Kotlin", color: "bg-[#7F52FF] text-white" },
+                                    { name: "Kotlin Multiplatform", color: "bg-[#C711E1] text-white" },
+                                    { name: "Android", color: "bg-[#3DDC84] text-black" },
+                                    { name: "iOS", color: "bg-black text-white" },
+                                    { name: "Git", color: "bg-[#F05032] text-white" }
+                                ].map((tech, i) => (
+                                    <div key={i} className={`px-4 py-2 border-3 border-black rounded-xl font-bold shadow-neo transform hover:-translate-y-1 transition-transform ${tech.color}`}>
+                                        {tech.name}
                                     </div>
                                 ))}
                             </div>
