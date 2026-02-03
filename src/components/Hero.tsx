@@ -1,4 +1,5 @@
 import { ArrowRight, Sparkles, Flame, Target } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Hero() {
     return (
@@ -40,8 +41,12 @@ export default function Hero() {
                     <div className="relative w-80 h-96">
                         {/* Actual Card with Overflow Hidden */}
                         <div className="absolute inset-0 bg-neo-secondary rounded-[3rem] border-3 border-black shadow-neo-lg flex items-center justify-center overflow-hidden">
-                            <div className="absolute inset-0 bg-white opacity-20 rotate-12 scale-150"></div>
-
+                            <Image
+                                src="/profile.png"
+                                alt="Profile"
+                                fill
+                                className="object-cover"
+                            />
                         </div>
 
                         {/* Floating Elements - Now Outside overflow-hidden container but inside relative wrapper */}
