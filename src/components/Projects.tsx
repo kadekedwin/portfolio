@@ -19,12 +19,12 @@ const projects = [
         logo: "/projects/clearfolio.png"
     },
     {
-        title: "BILLFORGE",
-        category: "Point of Sale System",
-        description: "A modern Point of Sale (POS) system for the web. Manage inventory, sales, and customers in real-time.",
+        title: "FOCUSGLEAN",
+        category: "Pomodoro Focus Timer",
+        description: "A pomodoro focus timer app to boost productivity. Stay focused, manage breaks, and get more done.",
         color: "bg-neo-primary",
-        url: "https://billforge.app",
-        logo: "/projects/billforge.png"
+        url: "https://apps.apple.com/id/app/focusglean-pomodoro-timer/id6670310561",
+        logo: "/projects/focusglean.png"
     }
 ];
 
