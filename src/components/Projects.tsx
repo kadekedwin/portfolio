@@ -7,7 +7,7 @@ const projects = [
         category: "Website Builder",
         description: "A tile site generator for business products. Create simple and fast websites for your inventory.",
         color: "bg-neo-secondary",
-        url: "https://sitetile.app",
+        url: "https://sitetile.my.id",
         logo: "/projects/sitetile.png"
     },
     {
