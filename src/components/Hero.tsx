@@ -8,7 +8,7 @@ export default function Hero() {
                 <div className="space-y-8 text-center md:text-left">
                     <div className="inline-flex items-center gap-2 bg-white border-2 border-black px-4 py-2 rounded-full font-bold shadow-neo-sm transform -rotate-2">
                         <Sparkles className="w-4 h-4 text-neo-yellow fill-current" />
-                        <span>Hello, I'm Edwin</span>
+                        <span>Hello, I&apos;m Edwin</span>
                     </div>
 
                     <h1 className="text-6xl md:text-7xl font-black leading-tight tracking-tight text-neo-text">
@@ -31,7 +31,7 @@ export default function Hero() {
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </a>
                         <a href="#contact" className="neo-button bg-white text-black flex items-center justify-center hover:bg-gray-50">
-                            Let's Talk
+                            Let&apos;s Talk
                         </a>
                     </div>
                 </div>

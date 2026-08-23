@@ -15,7 +15,7 @@ export async function POST(request: Request) {
             if (fileContent) {
                 try {
                     messages = JSON.parse(fileContent);
-                } catch (e) {
+                } catch {
                     // If file is corrupted, start fresh
                     messages = [];
                 }

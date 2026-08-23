@@ -13,7 +13,7 @@ export default function Contact() {
                 </div>
 
                 <h2 className="text-5xl md:text-7xl font-black mb-12">
-                    Let's Build <br />
+                    Let&apos;s Build <br />
                     <span className="text-neo-primary text-stroke-black">Something Fun.</span>
                 </h2>
 

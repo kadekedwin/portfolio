@@ -1,0 +1,155 @@
+# requirements:
+# - nodejs 20.9+ on the server (runs `node server.js`)
+# - SSH user can write /etc/systemd/system and run systemctl (i.e. root)
+#
+# the app is installed to ~/portfolio of the SSH user, and the service runs
+# as that same user - nothing is hardcoded to a specific account.
+#
+# secrets: (Settings -> Secrets and variables -> Actions)
+# - SERVER_HOST     server IP or hostname
+# - SERVER_USER     SSH login user (root)
+# - SERVER_SSH_KEY  private key, full contents incl. BEGIN/END lines.
+#                   must have NO passphrase - CI cannot type one.
+#                   generate a dedicated key, do not reuse a personal one:
+#                     ssh-keygen -t ed25519 -f ~/.ssh/portfolio_deploy -N ""
+#                     ssh-copy-id -i ~/.ssh/portfolio_deploy.pub root@HOST
+# - SERVER_PORT     optional, only if SSH is not on 22
+#
+# variables: (same page, "Variables" tab)
+# - WEBSITE_URL     public site URL, e.g. https://edwin.my.id
+#                   a variable, not a secret - NEXT_PUBLIC_* is compiled into
+#                   the browser bundle, so it is public either way
+
+name: Deploy to Production
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "npm"
+
+      - name: Create .env.production from Secret
+        run: |
+          cat > .env.production << EOF
+          NEXT_PUBLIC_WEBSITE_URL=${{ vars.WEBSITE_URL }}
+          EOF
+          # Also log (safely) to confirm file creation
+          ls -la .env*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Prepare Deployment Artifact
+        run: |
+          mkdir -p dist
+          # Copy Standalone build (Use /. to include hidden .next folder)
+          cp -r .next/standalone/. dist/
+          # Copy Static Assets
+          mkdir -p dist/.next
+          cp -r .next/static dist/.next/static
+          cp -r public dist/public
+          # Copy .env.production configuration for runtime
+          cp .env.production dist/
+          # Next traces messages.json into the standalone bundle. Shipping it
+          # would overwrite the contact submissions on the server every deploy.
+          rm -f dist/messages.json
+          # Create tarball
+          tar -czf release.tar.gz -C dist .
+
+      - name: Copy Artifact to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          source: "release.tar.gz"
+          target: "/tmp/"
+
+      - name: Deploy on Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script: |
+            SERVICE_NAME="portfolio"
+            SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+            USER_NAME="$(whoami)"
+            APP_DIR="$HOME/portfolio"
+
+            # Ensure we know where node is
+            NODE_PATH=$(which node)
+            if [ -z "$NODE_PATH" ]; then
+              NODE_PATH="/usr/bin/node"
+            fi
+
+            # Extract artifact (includes .env*)
+            mkdir -p ${APP_DIR}
+            tar -xzf /tmp/release.tar.gz -C ${APP_DIR}
+            rm /tmp/release.tar.gz
+
+            # The /api/contact route writes messages.json into APP_DIR at
+            # runtime, so the service user must own the directory.
+            mkdir -p /var/log/portfolio
+            chown -R ${USER_NAME}: ${APP_DIR} /var/log/portfolio
+
+            # Check if service exists
+            if systemctl list-unit-files | grep -q "^${SERVICE_NAME}.service"; then
+              echo "Service exists → restarting..."
+              systemctl restart ${SERVICE_NAME}
+            else
+              echo "Service not found → creating..."
+
+              cat > "${SERVICE_FILE}" <<EOF
+            [Unit]
+            Description=${SERVICE_NAME}
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=${USER_NAME}
+            WorkingDirectory=${APP_DIR}
+            Environment=NODE_ENV=production
+            Environment=PORT=3000
+            ExecStart=${NODE_PATH} server.js
+            Restart=always
+            RestartSec=5
+            NoNewPrivileges=true
+            PrivateTmp=true
+            StandardOutput=journal+append:/var/log/portfolio/web.log
+            StandardError=journal+append:/var/log/portfolio/web.error.log
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+
+              echo "Reloading systemd..."
+              systemctl daemon-reload
+
+              echo "Enabling service..."
+              systemctl enable ${SERVICE_NAME}
+
+              echo "Starting service..."
+              systemctl start ${SERVICE_NAME}
+            fi
+
+            echo "Done."

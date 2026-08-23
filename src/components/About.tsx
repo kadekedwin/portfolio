@@ -26,7 +26,7 @@ export default function About() {
                                 My code is clean, but my designs are messy in all the right ways. I create interfaces that demand attention without shouting.
                             </p>
                             <p className="font-medium text-lg leading-relaxed text-gray-800 mt-4">
-                                I thrive on the edge of what's possible. Always exploring new frameworks and tools, I treat every project as a playground for innovation. If there's a better, faster, or cooler way to build it, I'm learning it.
+                                I thrive on the edge of what&apos;s possible. Always exploring new frameworks and tools, I treat every project as a playground for innovation. If there&apos;s a better, faster, or cooler way to build it, I&apos;m learning it.
                             </p>
                         </div>
 
