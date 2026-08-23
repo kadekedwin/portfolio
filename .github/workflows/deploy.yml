@@ -9,8 +9,8 @@
 # - SERVER_PORT     optional, if SSH is not on 22
 #
 # variables:
-# - WEBSITE_URL     public site URL
 # - RUNNING_PORT    port the app listens on
+# - WEBSITE_URL     public site URL
 
 name: Deploy to Production
 
