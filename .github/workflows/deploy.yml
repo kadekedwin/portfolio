@@ -109,17 +109,17 @@ jobs:
 
             # The /api/contact route writes messages.json into APP_DIR at
             # runtime, so the service user must own the directory.
-            mkdir -p /var/log/portfolio
-            chown -R ${USER_NAME}: ${APP_DIR} /var/log/portfolio
+            sudo mkdir -p /var/log/portfolio
+            sudo chown -R ${USER_NAME}: ${APP_DIR} /var/log/portfolio
 
             # Check if service exists
             if systemctl list-unit-files | grep -q "^${SERVICE_NAME}.service"; then
               echo "Service exists → restarting..."
-              systemctl restart ${SERVICE_NAME}
+              sudo systemctl restart ${SERVICE_NAME}
             else
               echo "Service not found → creating..."
 
-              cat > "${SERVICE_FILE}" <<EOF
+              sudo tee "${SERVICE_FILE}" > /dev/null <<EOF
             [Unit]
             Description=${SERVICE_NAME}
             After=network.target
@@ -143,13 +143,13 @@ jobs:
             EOF
 
               echo "Reloading systemd..."
-              systemctl daemon-reload
+              sudo systemctl daemon-reload
 
               echo "Enabling service..."
-              systemctl enable ${SERVICE_NAME}
+              sudo systemctl enable ${SERVICE_NAME}
 
               echo "Starting service..."
-              systemctl start ${SERVICE_NAME}
+              sudo systemctl start ${SERVICE_NAME}
             fi
 
             echo "Done."
