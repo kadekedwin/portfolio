@@ -1,0 +1,145 @@
+# CI/CD Production: lint and build, publish the image to GHCR, deploy over SSH.
+#
+# requirements:
+# - docker + docker compose v2 on the server (the deploy runs `docker compose`)
+# - the SSH user must own $HOME/portfolio and be able to run docker
+# - the server must be able to pull from ghcr.io (the deploy logs in with GITHUB_TOKEN)
+# - next.config.ts must keep `output: "standalone"`
+# - deployment values go into the .env.docker written below, it is overwritten on every deploy
+# - the --env-file flag goes before the subcommand, env_file: would not resolve ${...} in the compose file
+# - WEBSITE_URL is NEXT_PUBLIC_, so it is baked into the image at build, not read at runtime
+# - contact submissions live in $HOME/portfolio/data/messages.json on the host, the deploy
+#   creates it if missing and the container mounts it, so a redeploy does not wipe them
+#
+# secrets:
+# - SERVER_HOST     server IP or hostname
+# - SERVER_USER     SSH user
+# - SERVER_SSH_KEY  private key, no passphrase
+# - SERVER_PORT     optional, if SSH is not on 22
+#
+# variables (repository variables, the fallback after || is used when unset):
+# - SERVICE_NAME    name for the container and the network
+# - HOST_PORT       host port published to the site, container side is always 3000
+# - WEBSITE_URL     public site URL
+
+name: CI/CD Production
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  USERNAME: ${{ github.actor }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Build Application
+        env:
+          NEXT_PUBLIC_WEBSITE_URL: http://build
+        run: npm run build
+
+  publish:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          build-args: |
+            NEXT_PUBLIC_WEBSITE_URL=${{ vars.WEBSITE_URL }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          source: "docker-compose.yml"
+          target: "$HOME/portfolio/"
+
+      - name: Execute Deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script: |
+            APP_DIR="$HOME/portfolio"
+            cd ${APP_DIR}
+
+            mkdir -p data
+            [ -f data/messages.json ] || echo "[]" > data/messages.json
+
+            cat > .env.docker << EOF
+            SERVICE_NAME=${{ vars.SERVICE_NAME || 'portfolio' }}
+            PORT=3000
+            HOST_PORT=${{ vars.HOST_PORT }}
+            DATA_DIR=${APP_DIR}/data
+            DOCKER_IMAGE=ghcr.io/${{ github.repository }}:main
+            EOF
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ env.USERNAME }} --password-stdin
+
+            docker compose --env-file .env.docker pull
+            docker compose --env-file .env.docker up -d
+
+            docker image prune -f
