@@ -3,8 +3,8 @@ import Image from 'next/image';
 
 export default function Hero() {
     return (
-        <section className="min-h-screen flex items-center justify-center pt-32 pb-20 px-6 relative overflow-hidden">
-            <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10 top-10">
+        <section className="flex items-center justify-center pt-32 pb-20 px-6 relative overflow-hidden">
+            <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
                 <div className="space-y-8 text-center md:text-left">
                     <div className="inline-flex items-center gap-2 bg-white border-2 border-black px-4 py-2 rounded-full font-bold shadow-neo-sm transform -rotate-2">
                         <Sparkles className="w-4 h-4 text-neo-yellow fill-current" />
